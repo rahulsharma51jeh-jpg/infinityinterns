@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          Role      @default(INTERN)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  internProfile InternProfile?
+  certificates  Certificate[]
+  
+  @@map("users")
+}
+
+model InternProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Personal Information
+  phone             String?
+  college           String
+  course            String?
+  semester          String?
+  
+  // Internship Details
+  internshipDomain  String
+  duration          String   // e.g., "4 Weeks", "8 Weeks"
+  startDate         DateTime
+  endDate           DateTime
+  
+  // Performance Metrics
+  attendance        Float?   @default(0)
+  marksSecured      Float?   @default(0)
+  
+  // Application Status
+  status            InternStatus @default(PENDING)
+  applicationDate   DateTime @default(now())
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  adminNotes        String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("intern_profiles")
+}
+
+model Certificate {
+  id                String   @id @default(cuid())
+  certificateNo     String   @unique
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Certificate Details
+  internName        String
+  college           String
+  internshipDomain  String
+  duration          String
+  startDate         DateTime
+  endDate           DateTime
+  attendance        Float
+  marksSecured      Float
+  
+  // QR Code & Verification
+  qrCodeData        String   // Base64 encoded QR code image
+  verificationUrl   String
+  
+  // Certificate File
+  pdfUrl            String?  // Path to generated PDF
+  
+  // Status
+  issuedAt          DateTime @default(now())
+  isActive          Boolean  @default(true)
+  revokedAt         DateTime?
+  revokedReason     String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("certificates")
+}
+
+enum Role {
+  ADMIN
+  INTERN
+}
+
+enum InternStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
