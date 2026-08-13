@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinity Interns - Internship Management System</title>
+    <meta name="description" content="Complete internship management with automatic certificate generation and QR verification">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .certificate-border {
+            border: 4px solid #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">∞</span>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <span class="text-indigo-600">Infinity</span> Interns
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="#features" class="text-gray-700 hover:text-indigo-600 font-medium">Features</a>
+                    <a href="#about" class="text-gray-700 hover:text-indigo-600 font-medium">About</a>
+                    <button onclick="showVerifySection()" class="text-gray-700 hover:text-indigo-600 font-medium">Verify</button>
+                    <button onclick="showLoginModal()" class="text-indigo-600 hover:text-indigo-700 font-medium">Login</button>
+                    <button onclick="showRegisterModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium">Register</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative gradient-bg py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="text-white fade-in">
+                    <div class="inline-block px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium mb-6">
+                        AICTE Approved & ISO Certified Platform
+                    </div>
+                    <h1 class="text-5xl font-bold mb-6 leading-tight">
+                        Transform Your Future with Professional Internships
+                    </h1>
+                    <p class="text-xl mb-8 text-white/90">
+                        Join thousands of students who have enhanced their skills through our industry-focused 
+                        internship programs. Get certified, get recognized, get hired.
+                    </p>
+                    <div class="flex space-x-4">
+                        <button onclick="showRegisterModal()" class="px-6 py-3 bg-white text-indigo-600 rounded-lg hover:bg-gray-100 font-medium text-lg shadow-lg">
+                            Start Your Journey →
+                        </button>
+                        <button onclick="showVerifySection()" class="px-6 py-3 bg-transparent text-white border-2 border-white rounded-lg hover:bg-white/10 font-medium text-lg">
+                            Verify Certificate
+                        </button>
+                    </div>
+                </div>
+                <div class="relative fade-in">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 transform hover:scale-105 transition-transform">
+                        <div class="certificate-border rounded-lg p-6 bg-gradient-to-br from-amber-50 to-yellow-50">
+                            <div class="text-center mb-4">
+                                <div class="text-2xl font-bold text-indigo-600 mb-2">CERTIFICATE</div>
+                                <div class="text-lg font-semibold">OF COMPLETION</div>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <p class="text-center">This is to certify that</p>
+                                <p class="text-center text-xl font-bold text-gray-900">Your Name</p>
+                                <p class="text-center text-gray-600">has successfully completed internship in</p>
+                                <p class="text-center text-lg font-bold text-indigo-600">Your Domain</p>
+                            </div>
+                            <div class="mt-6 flex justify-between items-center">
+                                <div class="w-16 h-16 bg-gray-200 rounded"></div>
+                                <div class="text-xs text-gray-500">Certificate No: II-XXXX-XXXX</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-12 bg-white border-y">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div class="text-center fade-in">
+                    <p class="text-4xl font-bold text-indigo-600">10,000+</p>
+                    <p class="text-gray-600 mt-2">Students Trained</p>
+                </div>
+                <div class="text-center fade-in">
+                    <p class="text-4xl font-bold text-indigo-600">50+</p>
+                    <p class="text-gray-600 mt-2">Internship Domains</p>
+                </div>
+                <div class="text-center fade-in">
+                    <p class="text-4xl font-bold text-indigo-600">100%</p>
+                    <p class="text-gray-600 mt-2">Verified Certificates</p>
+                </div>
+                <div class="text-center fade-in">
+                    <p class="text-4xl font-bold text-indigo-600">24/7</p>
+                    <p class="text-gray-600 mt-2">Support Available</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 fade-in">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">Why Choose Infinity Interns?</h2>
+                <p class="text-xl text-gray-600">Everything you need for a successful internship experience</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow fade-in">
+                    <div class="w-14 h-14 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Verified Certificates</h3>
+                    <p class="text-gray-600">Industry-recognized certificates with unique QR codes for instant verification</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow fade-in">
+                    <div class="w-14 h-14 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Practical Training</h3>
+                    <p class="text-gray-600">Learn through hands-on projects and real-world assignments in your chosen domain</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow fade-in">
+                    <div class="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Flexible Duration</h3>
+                    <p class="text-gray-600">Choose from 2 to 12 weeks internship programs that fit your schedule and goals</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow fade-in">
+                    <div class="w-14 h-14 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Multiple Domains</h3>
+                    <p class="text-gray-600">Explore internships in AutoCAD, Web Development, AI/ML, and 50+ other domains</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow fade-in">
+                    <div class="w-14 h-14 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Secure Platform</h3>
+                    <p class="text-gray-600">Your data is protected with enterprise-grade security and encrypted connections</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow fade-in">
+                    <div class="w-14 h-14 bg-red-100 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Expert Mentorship</h3>
+                    <p class="text-gray-600">Get guidance from industry professionals throughout your internship journey</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="fade-in">
+                    <h2 class="text-4xl font-bold text-gray-900 mb-6">About Infinity Interns</h2>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Infinity Interns is a subsidiary of Infinitya1 Career Counselling Private Limited, 
+                        an AICTE approved and ISO certified platform dedicated to bridging the gap between 
+                        academic learning and industry requirements.
+                    </p>
+                    <p class="text-lg text-gray-600 mb-6">
+                        We provide comprehensive online internship training programs across various domains, 
+                        helping students gain practical experience and industry-recognized certifications.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <p class="text-gray-700">AICTE Approved Platform</p>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <p class="text-gray-700">ISO 9001:2015 Certified</p>
+                        </div>
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <p class="text-gray-700">Registered with National Internship Portal</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="fade-in">
+                    <div class="bg-gradient-to-br from-indigo-100 to-blue-100 rounded-2xl p-8 space-y-4">
+                        <div class="bg-white rounded-xl p-6 shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-900 mb-3">Our Mission</h3>
+                            <p class="text-gray-600">
+                                To empower students with practical skills and industry knowledge through 
+                                accessible, high-quality online internship programs.
+                            </p>
+                        </div>
+                        <div class="bg-white rounded-xl p-6 shadow-lg">
+                            <h3 class="text-xl font-bold text-gray-900 mb-3">Our Vision</h3>
+                            <p class="text-gray-600">
+                                To become India's most trusted platform for professional internship training 
+                                and certification.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Verify Section -->
+    <section id="verify-section" class="py-20 bg-gray-50 hidden">
+        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-8 fade-in">
+                <div class="flex justify-center mb-4">
+                    <svg class="w-20 h-20 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h2 class="text-4xl font-bold text-gray-900 mb-3">Verify Certificate</h2>
+                <p class="text-lg text-gray-600">Enter the certificate number to verify authenticity</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-2xl overflow-hidden fade-in">
+                <div class="p-8">
+                    <div class="mb-6">
+                        <label for="cert-number" class="block text-sm font-medium text-gray-700 mb-2">Certificate Number</label>
+                        <input type="text" id="cert-number" placeholder="e.g., II-1234567890-1234" 
+                               class="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg">
+                    </div>
+                    <button onclick="verifyCertificate()" class="w-full btn-primary text-white py-3 px-4 rounded-lg font-medium text-lg shadow-lg">
+                        Verify Certificate
+                    </button>
+                    <div id="verify-result" class="mt-6 hidden"></div>
+                </div>
+
+                <div class="bg-gray-50 p-6 border-t">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">How to verify using QR code:</h3>
+                    <ol class="list-decimal list-inside space-y-2 text-sm text-gray-600">
+                        <li>Open your phone's camera or QR code scanner app</li>
+                        <li>Point the camera at the QR code on the certificate</li>
+                        <li>Tap the notification to verify</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-20 gradient-bg">
+        <div class="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8 fade-in">
+            <h2 class="text-4xl font-bold text-white mb-6">Ready to Start Your Internship Journey?</h2>
+            <p class="text-xl text-white/90 mb-8">Join thousands of students who are already building their careers with us</p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <button onclick="showRegisterModal()" class="px-8 py-4 bg-white text-indigo-600 rounded-lg hover:bg-gray-100 font-bold text-lg shadow-lg">
+                    Register for Free →
+                </button>
+                <button onclick="showVerifySection()" class="px-8 py-4 bg-transparent text-white border-2 border-white rounded-lg hover:bg-white/10 font-bold text-lg">
+                    Verify a Certificate
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">Infinity Interns</h3>
+                    <p class="text-gray-400">Empowering students through quality internship programs and verified certifications.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" onclick="showRegisterModal()" class="text-gray-400 hover:text-white">Register</a></li>
+                        <li><a href="#" onclick="showLoginModal()" class="text-gray-400 hover:text-white">Login</a></li>
+                        <li><a href="#" onclick="showVerifySection()" class="text-gray-400 hover:text-white">Verify Certificate</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2">
+                        <li><a href="mailto:info@infinityinterns.com" class="text-gray-400 hover:text-white">Contact Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">FAQs</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Help Center</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Contact</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>Email: info@infinityinterns.com</li>
+                        <li>Website: infinityinterns.com</li>
+                        <li>GitHub: <a href="https://github.com/rahulsharma51jeh-jpg/infinityinterns" class="text-indigo-400 hover:text-indigo-300">Repository</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2026 Infinitya1 Career Counselling Private Limited. All rights reserved.</p>
+                <p class="mt-2">AICTE Approved | ISO 9001:2015 Certified</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 fade-in">
+            <div class="p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Login to Infinity Interns</h2>
+                <form onsubmit="handleLogin(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="login-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        <input type="password" id="login-password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-blue-800 font-medium">Demo Admin Login:</p>
+                        <p class="text-sm text-blue-700">Email: admin@infinityinterns.com</p>
+                        <p class="text-sm text-blue-700">Password: admin123</p>
+                    </div>
+                    <button type="submit" class="w-full btn-primary text-white py-3 rounded-lg font-medium shadow-lg">
+                        Sign In
+                    </button>
+                </form>
+                <button onclick="closeModal('loginModal')" class="mt-4 w-full text-gray-600 hover:text-gray-900">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 my-8 fade-in">
+            <div class="p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Register for Internship</h2>
+                <form onsubmit="handleRegister(event)" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                            <input type="text" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                            <input type="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                            <input type="password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                            <input type="tel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">College *</label>
+                            <input type="text" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Course</label>
+                            <input type="text" placeholder="B.Tech, BCA, etc." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Domain *</label>
+                            <input type="text" required placeholder="Web Development, AutoCAD, etc." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Duration *</label>
+                            <select required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="4 Weeks">4 Weeks</option>
+                                <option value="8 Weeks">8 Weeks</option>
+                                <option value="12 Weeks">12 Weeks</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full btn-primary text-white py-3 rounded-lg font-medium shadow-lg">
+                        Register Now
+                    </button>
+                </form>
+                <button onclick="closeModal('registerModal')" class="mt-4 w-full text-gray-600 hover:text-gray-900">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Demo data for certificate verification
+        const demoCertificates = {
+            'II-1234567890-1234': {
+                name: 'John Doe',
+                college: 'Example University',
+                domain: 'Web Development',
+                duration: '4 Weeks',
+                startDate: '2026-06-01',
+                endDate: '2026-06-29',
+                attendance: 88,
+                marks: 93,
+                issuedDate: '2026-07-01'
+            }
+        };
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+        }
+
+        function showRegisterModal() {
+            document.getElementById('registerModal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function showVerifySection() {
+            document.getElementById('verify-section').classList.remove('hidden');
+            document.getElementById('verify-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (email === 'admin@infinityinterns.com' && password === 'admin123') {
+                alert('✅ Login Successful!\n\nThis is a demo. In the full application, you would be redirected to the admin dashboard.\n\nTo access the full system:\n1. Clone the GitHub repository\n2. Follow the setup guide\n3. Run locally or deploy');
+            } else {
+                alert('⚠️ Demo Mode\n\nThis is a standalone HTML demo.\n\nFor full functionality:\n• Clone: https://github.com/rahulsharma51jeh-jpg/infinityinterns\n• Install: npm install\n• Run: npm run dev');
+            }
+            closeModal('loginModal');
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            alert('✅ Registration Successful!\n\nThis is a demo. Your application would be submitted for admin approval.\n\nTo access the full registration system:\n1. Visit: https://github.com/rahulsharma51jeh-jpg/infinityinterns\n2. Follow the quick start guide\n3. Run the complete application');
+            closeModal('registerModal');
+        }
+
+        function verifyCertificate() {
+            const certNumber = document.getElementById('cert-number').value.trim();
+            const resultDiv = document.getElementById('verify-result');
+            
+            if (!certNumber) {
+                resultDiv.innerHTML = '<div class="bg-red-50 border border-red-200 rounded-lg p-4"><p class="text-red-800">Please enter a certificate number</p></div>';
+                resultDiv.classList.remove('hidden');
+                return;
+            }
+
+            if (demoCertificates[certNumber]) {
+                const cert = demoCertificates[certNumber];
+                resultDiv.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <div class="flex items-center mb-4">
+                            <svg class="w-8 h-8 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <div>
+                                <h3 class="text-lg font-bold text-green-800">✅ Certificate Verified!</h3>
+                                <p class="text-sm text-green-600">This certificate is authentic and valid</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <p><strong>Name:</strong> ${cert.name}</p>
+                            <p><strong>College:</strong> ${cert.college}</p>
+                            <p><strong>Domain:</strong> ${cert.domain}</p>
+                            <p><strong>Duration:</strong> ${cert.duration}</p>
+                            <p><strong>Attendance:</strong> ${cert.attendance}%</p>
+                            <p><strong>Marks:</strong> ${cert.marks}%</p>
+                            <p><strong>Issued:</strong> ${cert.issuedDate}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <p class="text-yellow-800 mb-2"><strong>⚠️ Demo Certificate</strong></p>
+                        <p class="text-sm text-yellow-700">Try this demo certificate number: <strong>II-1234567890-1234</strong></p>
+                        <p class="text-sm text-yellow-700 mt-2">For real certificate verification, use the full application at:<br>
+                        <a href="https://github.com/rahulsharma51jeh-jpg/infinityinterns" class="text-indigo-600 underline">GitHub Repository</a></p>
+                    </div>
+                `;
+            }
+            resultDiv.classList.remove('hidden');
+        }
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Close modals on escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal('loginModal');
+                closeModal('registerModal');
+            }
+        });
+    </script>
+</body>
+</html>
