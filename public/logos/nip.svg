@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 96" width="220" height="96" role="img" aria-label="National Internship Portal">
+  <!-- tricolour figure mark -->
+  <g transform="translate(6 12)">
+    <circle cx="26" cy="12" r="8" fill="#f2a01d"/>
+    <path d="M6 26 C 6 44, 46 44, 46 26 C 46 34, 38 40, 26 40 C 14 40, 6 34, 6 26 Z" fill="#1a7f4b"/>
+    <path d="M2 22 C 10 8, 42 8, 50 22 C 42 16, 10 16, 2 22 Z" fill="#12306b"/>
+    <path d="M10 48 h32 l-4 8 h-24 z" fill="#1b4a9c"/>
+  </g>
+
+  <g font-family="Trebuchet MS, Segoe UI, sans-serif">
+    <text x="66" y="20" font-size="7.5" fill="#5a5a5a">Ministry of Corporate Affairs</text>
+    <text x="66" y="42" font-size="17" font-weight="700" fill="#1a7f4b" letter-spacing="0.4">NATIONAL</text>
+    <text x="66" y="62" font-size="17" font-weight="700" fill="#12306b" letter-spacing="0.4">INTERNSHIP</text>
+    <text x="66" y="82" font-size="17" font-weight="700" fill="#e2711d" letter-spacing="2.6">PORTAL</text>
+  </g>
+</svg>

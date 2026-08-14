@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 96" width="260" height="96" role="img" aria-label="Ministry of Corporate Affairs, Government of India">
+  <!-- simplified state emblem silhouette -->
+  <g fill="#6f6f6f" transform="translate(6 4)">
+    <ellipse cx="30" cy="14" rx="7" ry="9"/>
+    <ellipse cx="18" cy="20" rx="9" ry="7"/>
+    <ellipse cx="42" cy="20" rx="9" ry="7"/>
+    <path d="M8 28 h44 l-3 6 H11 z"/>
+    <rect x="14" y="34" width="32" height="4" rx="1"/>
+    <path d="M18 38 h24 l-4 20 h-16 z"/>
+    <circle cx="30" cy="46" r="4.5" fill="none" stroke="#6f6f6f" stroke-width="1.6"/>
+    <path d="M16 60 h28 l-2 5 H18 z"/>
+    <text x="30" y="76" text-anchor="middle" font-family="Georgia, serif" font-size="8" fill="#6f6f6f">सत्यमेव जयते</text>
+  </g>
+
+  <line x1="70" y1="8" x2="70" y2="80" stroke="#c9c9c9" stroke-width="1.4"/>
+
+  <g font-family="Trebuchet MS, Segoe UI, sans-serif">
+    <g font-size="15" font-weight="700" fill="#12306b">
+      <text x="80" y="24">M</text><text x="80" y="42">C</text><text x="80" y="60">A</text>
+    </g>
+    <g font-size="12.5" font-weight="600" fill="#12306b">
+      <text x="98" y="24">INISTRY OF</text>
+      <text x="98" y="42">ORPORATE</text>
+      <text x="98" y="60">FFAIRS</text>
+    </g>
+    <text x="80" y="76" font-size="9.5" font-weight="700" fill="#e07b18" letter-spacing="0.6">GOVERNMENT OF INDIA</text>
+  </g>
+</svg>

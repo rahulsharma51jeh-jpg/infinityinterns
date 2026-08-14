@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 96" width="250" height="96" role="img" aria-label="Ministry of MSME, Government of India">
+  <!-- simplified state emblem silhouette -->
+  <g fill="#6f6f6f" transform="translate(4 6) scale(0.86)">
+    <ellipse cx="30" cy="14" rx="7" ry="9"/>
+    <ellipse cx="18" cy="20" rx="9" ry="7"/>
+    <ellipse cx="42" cy="20" rx="9" ry="7"/>
+    <path d="M8 28 h44 l-3 6 H11 z"/>
+    <rect x="14" y="34" width="32" height="4" rx="1"/>
+    <path d="M18 38 h24 l-4 20 h-16 z"/>
+    <circle cx="30" cy="46" r="4.5" fill="none" stroke="#6f6f6f" stroke-width="1.6"/>
+    <path d="M16 60 h28 l-2 5 H18 z"/>
+  </g>
+
+  <!-- angular MSME wordmark -->
+  <g fill="#4a4a4a">
+    <!-- M -->
+    <path d="M62 16 h9 l7 16 l7-16 h9 v40 h-9 V34 l-7 15 l-7-15 v22 h-9 z"/>
+    <!-- S -->
+    <path d="M100 16 h27 v8 h-18 v7 h18 v25 h-27 v-8 h18 v-8 h-18 z"/>
+    <!-- M -->
+    <path d="M132 16 h9 l7 16 l7-16 h9 v40 h-9 V34 l-7 15 l-7-15 v22 h-9 z"/>
+    <!-- E -->
+    <path d="M170 16 h26 v8 h-17 v7 h15 v8 h-15 v9 h17 v8 h-26 z"/>
+  </g>
+
+  <g font-family="Trebuchet MS, Segoe UI, sans-serif" fill="#4a4a4a">
+    <text x="62" y="70" font-size="7.5">सूक्ष्म, लघु और मध्यम उद्यम मंत्रालय, भारत सरकार</text>
+    <text x="62" y="82" font-size="8.5" font-weight="600">Ministry of MSME, Govt. of India</text>
+  </g>
+</svg>

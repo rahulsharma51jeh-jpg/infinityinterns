@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 132" width="300" height="132" role="img" aria-label="Infinity Interns">
+  <defs>
+    <linearGradient id="iiNavy" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#24387a"/><stop offset="1" stop-color="#0d1c46"/>
+    </linearGradient>
+    <linearGradient id="iiRed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ea4a34"/><stop offset="1" stop-color="#b81f16"/>
+    </linearGradient>
+  </defs>
+
+  <!-- graduation cap, centred above the infinity mark -->
+  <g transform="translate(116 0)">
+    <path d="M34 2 L67 14 L34 26 L1 14 Z" fill="url(#iiNavy)"/>
+    <path d="M13 19.5 v9 c0 4.5 9.4 7.2 21 7.2 s21-2.7 21-7.2 v-9 L34 27 z" fill="#16295e"/>
+    <path d="M63.5 15.5 v13" stroke="#e8442f" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="63.5" cy="31" r="3.2" fill="#e8442f"/>
+  </g>
+
+  <!-- infinity mark: a lemniscate split at the centre so the strands cross,
+       navy on the left lobe, red on the right and drawn over the crossing -->
+  <g fill="none" stroke-width="12.5" stroke-linecap="round">
+    <path d="M150 67 C 122 91, 88 91, 88 67 C 88 43, 122 43, 150 67" stroke="url(#iiNavy)"/>
+    <path d="M150 67 C 178 91, 212 91, 212 67 C 212 43, 178 43, 150 67" stroke="url(#iiRed)"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="150" y="112" text-anchor="middle" font-family="Trebuchet MS, Segoe UI, sans-serif"
+        font-size="28" font-weight="700" letter-spacing="1.2" fill="#16295e">INFINITY</text>
+  <g>
+    <line x1="58" y1="125" x2="92" y2="125" stroke="#b81f16" stroke-width="1.5"/>
+    <text x="150" y="129" text-anchor="middle" font-family="Trebuchet MS, Segoe UI, sans-serif"
+          font-size="14.5" font-weight="600" letter-spacing="4.5" fill="#b81f16">INTERNS</text>
+    <line x1="208" y1="125" x2="242" y2="125" stroke="#b81f16" stroke-width="1.5"/>
+  </g>
+</svg>
