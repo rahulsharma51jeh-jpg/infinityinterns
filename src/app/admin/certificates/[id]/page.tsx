@@ -1,20 +1,30 @@
 import Link from 'next/link';
+import BackLink from '@/components/ui/BackLink';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { baseUrlFrom, certificateView, type CertificateRow } from '@/lib/certificate';
+import { baseUrlFrom, certificateView, getTemplate, type CertificateRow } from '@/lib/certificate';
 import StatusBadge from '@/components/ui/StatusBadge';
 import ActionForm from '@/components/ui/ActionForm';
 import SubmitButton from '@/components/ui/SubmitButton';
 import CertificatePreview from '@/components/certificate/CertificatePreview';
 import RevocationPanel from './RevocationPanel';
+import ManualCertificateForm from '../new/ManualCertificateForm';
+import Flash from '@/components/ui/Flash';
 import { refreshCertificate } from '../../actions';
 
 export const metadata: Metadata = { title: 'Manage certificate' };
 export const dynamic = 'force-dynamic';
 
-export default async function ManageCertificatePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ManageCertificatePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ ok?: string; error?: string }>;
+}) {
+  const sp = await searchParams;
   const { id: idRaw } = await params;
   const id = Number(idRaw);
   if (!Number.isInteger(id)) notFound();
@@ -36,17 +46,44 @@ export default async function ManageCertificatePage({ params }: { params: Promis
     .prepare('SELECT found, source, created_at FROM verification_log WHERE UPPER(cert_no) = ? ORDER BY id DESC LIMIT 10')
     .all(cert.cert_no.toUpperCase()) as { found: number; source: string; created_at: string }[];
 
+  // Manually issued certificates have no application to correct, so their
+  // snapshot is editable in place.
+  const isManual = cert.application_id === null;
+  const editCfg = isManual ? getTemplate(cert.template_id).config : null;
+  const editValues: Record<string, string> = {};
+  if (editCfg) {
+    for (const f of editCfg.fields) {
+      const raw = d[f.key] ?? '';
+      // dates are stored formatted for print; <input type=date> needs ISO
+      editValues[f.key] = f.type === 'date' ? isoFromDisplay(raw) : String(raw ?? '');
+    }
+    editValues.gender = String(d.gender ?? 'other');
+    editValues.email = String(d.email ?? '');
+    editValues.issued_on = cert.issued_on;
+    editValues.certificate_no = cert.cert_no;
+  }
+
   return (
     <div>
-      <Link href="/admin/certificates" className="text-sm font-medium text-navy-500 hover:text-navy-800">
-        ← All certificates
-      </Link>
+      <BackLink href="/admin/certificates">All certificates</BackLink>
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-mono text-3xl font-bold text-navy-900">{cert.cert_no}</h1>
           <p className="mt-1 text-sm text-navy-500">
             {d.intern_name} · {d.domain} · issued {cert.issued_on} · template “{view.templateName}”
+          </p>
+          <p className="mt-1 text-xs text-navy-400">
+            {cert.application_id ? (
+              <>
+                Issued on approval of{' '}
+                <Link href={`/admin/applications/${cert.application_id}`} className="font-medium text-brand-600 hover:underline">
+                  application #{cert.application_id}
+                </Link>
+              </>
+            ) : (
+              'Created manually or imported from a spreadsheet'
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -60,7 +97,11 @@ export default async function ManageCertificatePage({ params }: { params: Promis
         </div>
       </div>
 
-      <div className="mt-7 grid gap-6 lg:grid-cols-3">
+      <div className="mt-5">
+        <Flash ok={sp.ok} error={sp.error} />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-1">
           {/* snapshot */}
           <section className="card p-5">
@@ -161,6 +202,24 @@ export default async function ManageCertificatePage({ params }: { params: Promis
             />
           </div>
 
+          {isManual && editCfg && (
+            <section className="card p-5">
+              <h2 className="font-bold text-navy-900">Correct these details</h2>
+              <p className="mt-1 mb-4 text-xs text-navy-400">
+                This certificate was not created from an application, so its record is editable here. The certificate
+                number never changes, so anything already printed or scanned keeps working.
+              </p>
+              <ManualCertificateForm
+                mode="edit"
+                certificateId={cert.id}
+                templateId={cert.template_id}
+                templates={templates.map((t) => ({ id: t.id, name: t.name, isDefault: t.is_default === 1 }))}
+                fields={editCfg.fields}
+                initialValues={editValues}
+              />
+            </section>
+          )}
+
           <section>
             <h2 className="mb-3 font-bold text-navy-900">Rendered certificate</h2>
             <div className="overflow-hidden rounded-xl border border-navy-100 bg-white p-2 shadow-sm">
@@ -171,4 +230,14 @@ export default async function ManageCertificatePage({ params }: { params: Promis
       </div>
     </div>
   );
+}
+
+/** dd-MM-yyyy (as printed) back to the yyyy-MM-dd that date inputs require. */
+function isoFromDisplay(value: string): string {
+  const s = String(value ?? '').trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (!m) return '';
+  return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
 }

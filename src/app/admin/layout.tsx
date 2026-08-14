@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { ExternalIcon } from '@/components/ui/Icons';
 import { logoutAction } from '@/app/(auth)/actions';
 
 const NAV = [
@@ -33,8 +34,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </Link>
 
           <div className="ml-auto flex items-center gap-3">
-            <Link href="/" className="hidden text-sm font-medium text-navy-500 hover:text-navy-800 sm:block">
-              View public site ↗
+            <Link
+              href="/"
+              className="hidden items-center gap-1 text-sm font-medium text-navy-500 hover:text-navy-800 sm:flex"
+            >
+              View public site
+              <ExternalIcon />
             </Link>
             <span className="hidden text-sm text-navy-400 md:block" title={admin.email}>
               {admin.name}

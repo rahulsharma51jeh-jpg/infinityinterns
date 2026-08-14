@@ -22,6 +22,7 @@ interface Row {
   verify_count: number;
   last_verified: string | null;
   template_name: string;
+  application_id: number | null;
 }
 
 export default async function AdminCertificatesPage({
@@ -47,7 +48,8 @@ export default async function AdminCertificatesPage({
 
   const rows = db
     .prepare(
-      `SELECT c.id, c.cert_no, c.data, c.status, c.issued_on, c.verify_count, c.last_verified, t.name AS template_name
+      `SELECT c.id, c.cert_no, c.data, c.status, c.issued_on, c.verify_count, c.last_verified, c.application_id,
+              t.name AS template_name
          FROM certificates c
          JOIN templates t ON t.id = c.template_id
         ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
@@ -67,10 +69,29 @@ export default async function AdminCertificatesPage({
 
   return (
     <div>
-      <h1 className="font-serif text-3xl text-navy-900">Certificates</h1>
-      <p className="mt-1.5 text-sm text-navy-500">
-        {totals.total} issued · {totals.active} active · {totals.revoked} revoked · {totals.checks} public verification
-        {totals.checks === 1 ? '' : 's'}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-3xl text-navy-900">Certificates</h1>
+          <p className="mt-1.5 text-sm text-navy-500">
+            {totals.total} issued · {totals.active} active · {totals.revoked} revoked · {totals.checks} public
+            verification{totals.checks === 1 ? '' : 's'}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/certificates/import" className="btn-primary">
+            Import from Excel
+          </Link>
+          <Link href="/admin/certificates/new" className="btn-ghost">
+            + Generate manually
+          </Link>
+        </div>
+      </div>
+
+      <p className="mt-3 rounded-lg border border-navy-100 bg-white px-4 py-2.5 text-xs text-navy-500">
+        Certificates are normally created automatically when an application is approved. Use{' '}
+        <strong className="text-navy-700">Generate manually</strong> for interns trained outside the portal, and{' '}
+        <strong className="text-navy-700">Import from Excel</strong> to issue a whole batch at once.
       </p>
 
       <div className="mt-5">
@@ -114,6 +135,7 @@ export default async function AdminCertificatesPage({
               <th className="th">Certificate no.</th>
               <th className="th">Intern</th>
               <th className="th">Domain</th>
+              <th className="th">Source</th>
               <th className="th">Template</th>
               <th className="th">Issued</th>
               <th className="th">Checks</th>
@@ -136,6 +158,21 @@ export default async function AdminCertificatesPage({
                     <p className="text-xs text-navy-400">{d.college}</p>
                   </td>
                   <td className="td text-navy-600">{d.domain}</td>
+                  <td className="td">
+                    {r.application_id ? (
+                      <Link
+                        href={`/admin/applications/${r.application_id}`}
+                        className="badge bg-navy-100 text-navy-600 hover:bg-navy-200"
+                        title="Issued on approval of an application"
+                      >
+                        Application
+                      </Link>
+                    ) : (
+                      <span className="badge bg-sky-100 text-sky-800" title="Entered manually or imported from a spreadsheet">
+                        Manual
+                      </span>
+                    )}
+                  </td>
                   <td className="td text-xs text-navy-400">{r.template_name}</td>
                   <td className="td text-xs text-navy-500">{r.issued_on}</td>
                   <td className="td text-xs text-navy-500">

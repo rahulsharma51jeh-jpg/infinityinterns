@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '@/components/ui/BackLink';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
@@ -31,9 +32,7 @@ export default async function ApplyPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <Link href="/programs" className="text-sm font-medium text-navy-500 hover:text-navy-800">
-        ← All domains
-      </Link>
+      <BackLink href="/programs">All domains</BackLink>
 
       <h1 className="mt-4 font-serif text-4xl text-navy-900">Apply for an internship</h1>
       <p className="mt-3 text-navy-500">

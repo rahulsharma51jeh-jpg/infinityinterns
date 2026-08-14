@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ChevronRightIcon } from '@/components/ui/Icons';
 import { headers } from 'next/headers';
 import { db } from '@/lib/db';
 import { listPrograms, publicStats } from '@/lib/queries';
@@ -134,7 +135,8 @@ export default async function HomePage() {
               <p className="mt-2 text-navy-500">Live, mentor-led cohorts with real deliverables.</p>
             </div>
             <Link href="/programs" className="btn-ghost">
-              View all {stats.programs} domains →
+              View all {stats.programs} domains
+            <ChevronRightIcon />
             </Link>
           </div>
 

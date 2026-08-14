@@ -12,6 +12,7 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.10.0",
+    "exceljs": "^4.4.0",
     "jose": "^5.9.6",
     "nanoid": "^5.0.9",
     "next": "^15.5.23",

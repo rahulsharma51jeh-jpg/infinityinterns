@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BackLink from '@/components/ui/BackLink';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getProgramBySlug, listPrograms } from '@/lib/queries';
@@ -21,9 +22,7 @@ export default async function ProgramDetailPage({ params }: { params: Promise<{ 
     <>
       <section className="border-b border-navy-100 bg-white">
         <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6">
-          <Link href="/programs" className="text-sm font-medium text-navy-500 hover:text-navy-800">
-            ← All domains
-          </Link>
+          <BackLink href="/programs">All domains</BackLink>
 
           <div className="mt-4 flex items-center gap-2 text-xs font-semibold tracking-wide text-navy-400 uppercase">
             <span>{program.duration}</span>

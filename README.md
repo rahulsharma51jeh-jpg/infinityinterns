@@ -14,6 +14,8 @@ rendered from the database rather than from an editable image file.
 - [What it does](#what-it-does)
 - [Quick start](#quick-start)
 - [How certificates work](#how-certificates-work)
+- [Manual and bulk generation](#manual-and-bulk-generation)
+- [Bulk import from Excel](#bulk-import-from-excel)
 - [The certificate designer](#the-certificate-designer)
 - [Verification API](#verification-api)
 - [Routes](#routes)
@@ -35,6 +37,8 @@ rendered from the database rather than from an editable image file.
 - A review queue that refuses to approve records missing attendance, marks or dates — the values that get printed.
 - Edit any certificate value before approving, with a **live preview of exactly what approval will produce**.
 - Approve individually or in bulk; certificates are minted automatically.
+- Three ways to create a certificate: on approval, [typed in by hand](#manual-and-bulk-generation), or
+  [imported from a spreadsheet](#bulk-import-from-excel) for a whole batch.
 - Revoke a certificate with a public reason, or restore it. Revocation shows on the public page instantly.
 - Rebuild an issued certificate against fresh application data or a different template — **keeping its number**, so
   printed copies and QR codes stay valid.
@@ -130,6 +134,77 @@ Lookups are tolerant: case and internal whitespace are normalised, so a pasted `
 
 Every lookup — hit or miss — is written to `verification_log`. Failed lookups are surfaced on the admin overview,
 since a cluster of them is a useful forgery signal.
+
+---
+
+## Manual and bulk generation
+
+Not every intern comes through the portal — offline batches, partner colleges and historical paper certificates all
+need a route in. There are two, both at `/admin/certificates`:
+
+### One at a time — `/admin/certificates/new`
+
+A form built **from the selected template's own data columns**, so a column added in the designer appears here
+automatically with no code change. Switching template reloads the form with that template's fields.
+
+Beyond the certificate data you can set:
+
+| Option | Effect |
+| --- | --- |
+| **Email** | Links the certificate to an existing intern account, so it appears on their dashboard |
+| **Gender** | Chooses the he/she wording |
+| **Issue Date** | Defaults to today |
+| **Certificate No** | Leave blank to auto-generate, or supply one to migrate an existing paper certificate under its original number |
+| **Reason** | Free-text note recorded in the audit log |
+
+Manually created certificates have no application behind them, so their record stays **editable in place** on the
+certificate page — useful when a name was mistyped. The number is never reassigned, so anything already printed or
+scanned keeps resolving. Certificates issued from an application are corrected the other way round: fix the
+application, then **Rebuild**.
+
+The certificates list tags every row **Application** or **Manual** so the provenance of each one is obvious.
+
+---
+
+## Bulk import from Excel
+
+`/admin/certificates/import` turns a spreadsheet into a batch of certificates — one row each, every one with its own
+number and QR code, identical to individually issued ones.
+
+```
+1. Download the template   →  headers generated from the chosen certificate template,
+                              with an example row and a per-column Instructions sheet
+2. Upload the filled file  →  .xlsx or .csv, parsed server-side
+3. Review                  →  every row shown with its status; nothing saved yet
+4. Generate                →  valid rows issued in one transaction, full results downloadable as CSV
+```
+
+**Review is not a formality.** Each row is validated independently and reported as *ready*, *warning* or *error*:
+
+| Checked | Outcome |
+| --- | --- |
+| Required column blank | error — row skipped |
+| Unparseable date | error |
+| Non-numeric or out-of-range percentage | error |
+| End date before start date | error |
+| Certificate number already issued, or repeated in the file | error |
+| Same name + domain + start date twice in the file | warning |
+| Email that matches no account | warning — issued, but unlinked |
+| Value outside a fixed choice list | warning — kept as typed |
+
+Rows with warnings **are** imported; only errors are skipped. The results table lists every source row with its
+generated number or the reason it was skipped, and downloads as a CSV so the batch has a permanent record.
+
+**Header matching is forgiving.** Case, spaces and punctuation are ignored, and common alternatives are recognised —
+`Name`, `Institute`, `From`, `To`, `Score` and similar all map correctly. Columns that match nothing are listed as
+ignored rather than silently dropped. Dates accept real Excel dates, Excel serial numbers, `dd-mm-yyyy`,
+`yyyy-mm-dd` and `dd/mm/yy`; ambiguous day/month order is read **day-first**, matching the printed certificate.
+
+Limits: 500 rows and 5 MB per import, and legacy `.xls` must be re-saved as `.xlsx` (the format is rejected with a
+message saying so rather than failing obscurely).
+
+> Parsing happens on the server, never in the browser — the client cannot decide what is valid. The reviewed rows are
+> re-validated from their values on commit, so an edited payload cannot smuggle a bad row through.
 
 ---
 
@@ -239,8 +314,18 @@ PNG QR code pointing at the certificate's public verification page.
 
 **Intern** — `/apply`, `/dashboard`
 
-**Admin** — `/admin` (overview), `/admin/applications[/id]`, `/admin/certificates[/id]`,
-`/admin/templates[/id]`, `/admin/programs`, `/admin/interns`, `/admin/settings`
+**Admin**
+
+| Path | Purpose |
+| --- | --- |
+| `/admin` | Overview: review queue, recent issues, recent verification checks |
+| `/admin/applications[/id]` | Review queue and application detail with approval |
+| `/admin/certificates[/id]` | All certificates; manage, rebuild, revoke, edit manual ones |
+| `/admin/certificates/new` | Generate a single certificate by hand |
+| `/admin/certificates/import` | Bulk import from .xlsx / .csv |
+| `/admin/certificates/import/template` | Downloads the blank import workbook (`?format=xlsx\|csv`) |
+| `/admin/templates[/id]` | Certificate designer |
+| `/admin/programs`, `/admin/interns`, `/admin/settings` | Domains, users, configuration and audit log |
 
 ---
 
@@ -266,6 +351,8 @@ SQLite via `better-sqlite3`. Schema in [`src/lib/schema.sql`](src/lib/schema.sql
 | `src/lib/template.ts` | `TemplateConfig` type, system fields, and the default (official) design |
 | `src/lib/certificate.ts` | Issue, rebuild, revoke, look up, QR generation, number allocation |
 | `src/lib/render.ts` | Placeholder interpolation, `**bold**` parsing, date and pronoun formatting |
+| `src/lib/import.ts` | Spreadsheet parsing (xlsx + CSV), header matching, per-row validation |
+| `src/lib/importColumns.ts` | Client-safe column metadata, limits and row types |
 | `src/lib/auth.ts` | Password hashing and signed-cookie sessions (`jose`) |
 | `src/components/certificate/` | `CertificateArtwork` (pure renderer), `OrnateFrame`, `CertificateStage` (scaling) |
 
@@ -319,20 +406,35 @@ verifies over both the web page and the JSON API with the values just saved, rev
 the designer round-tripping an edit through save and reload, the intern dashboard, and that an intern cannot reach the
 admin console.
 
+`scripts/e2e-import.mjs` covers manual and bulk generation: the manual form building itself from the template's
+columns, a generated certificate verifying with the exact values entered, editing a manual certificate without moving
+its number, the downloadable workbook carrying the right headers, and an import of a deliberately messy spreadsheet —
+asserting that each planted mistake (missing name, reversed dates, impossible percentage, duplicate number, unknown
+email, unmatched column) is caught with the right message, that nothing is written during preview, that warnings still
+import while errors are skipped and reported, that a migrated number and issue date survive verbatim, that day-first
+dates parse correctly, that re-importing an issued number is refused, and that a linked certificate reaches the
+intern's dashboard.
+
 ```bash
 npm run build
 npm start &                       # or: node node_modules/next/dist/bin/next start -p 3100
-node scripts/e2e.mjs http://localhost:3000
+node scripts/e2e.mjs        http://localhost:3000
+node scripts/e2e-import.mjs http://localhost:3000
 ```
 
-It exits non-zero if any check fails and prints a `PASS`/`FAIL` line per check. 37 checks currently pass.
+Each exits non-zero if any check fails and prints a `PASS`/`FAIL` line per check. 81 checks currently pass (37 + 44).
 
-`scripts/shot.mjs <url> <out.png> [selector|page]` captures a pixel-exact screenshot — useful for reviewing certificate
-artwork changes without a browser.
+`scripts/shot.mjs <url> <out.png> [selector|page]` captures a pixel-exact screenshot — useful for reviewing
+certificate artwork changes without a browser. `scripts/shot-admin.mjs <baseUrl> <outDir>` does the same for pages
+behind the admin login.
 
 ---
 
 ## Tech stack
 
 Next.js 15 (App Router, Server Components, Server Actions) · TypeScript · Tailwind CSS v4 · SQLite
-(`better-sqlite3`) · `jose` sessions · `bcryptjs` · `zod` validation · `qrcode` · Playwright for the smoke test.
+(`better-sqlite3`) · `jose` sessions · `bcryptjs` · `zod` validation · `qrcode` · `exceljs` for spreadsheet
+read/write · Playwright for the smoke tests.
+
+Server actions carry file uploads and the reviewed-rows payload, so `bodySizeLimit` is raised to 8 MB in
+`next.config.ts`.

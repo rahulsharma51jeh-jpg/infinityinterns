@@ -9,6 +9,7 @@ import type { CertData } from '@/lib/render';
 import CertificateArtwork from '@/components/certificate/CertificateArtwork';
 import CertificateStage from '@/components/certificate/CertificateStage';
 import Flash from '@/components/ui/Flash';
+import { ChevronLeftIcon } from '@/components/ui/Icons';
 import { saveTemplate, type ActionState } from '../../actions';
 import { Area, Color, ImagePick, MiniBtn, Num, Pick, Row, Section, Text, Toggle } from './controls';
 
@@ -207,7 +208,8 @@ export default function TemplateDesigner({
       <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-navy-100 bg-white/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="flex flex-wrap items-center gap-3">
           <Link href="/admin/templates" className="btn-ghost btn-sm">
-            ← Templates
+            <ChevronLeftIcon />
+            Templates
           </Link>
 
           <input

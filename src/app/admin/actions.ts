@@ -9,12 +9,17 @@ import { requireAdmin } from '@/lib/auth';
 import { hashPassword } from '@/lib/auth';
 import {
   baseUrlFrom,
+  getTemplate,
   issueCertificate,
+  issueManualCertificate,
   refreshCertificateData,
   restoreCertificate,
   revokeCertificate,
+  updateManualCertificate,
 } from '@/lib/certificate';
-import { DEFAULT_TEMPLATE, normalizeConfig } from '@/lib/template';
+import { DEFAULT_TEMPLATE, normalizeConfig, type TemplateConfig } from '@/lib/template';
+import { fileToGrid, toIsoDate, validateGrid } from '@/lib/import';
+import { EXTRA_COLUMNS, MAX_FILE_BYTES, summarise, type ParsedRow } from '@/lib/importColumns';
 
 export type ActionState = { error?: string; ok?: string };
 
@@ -533,4 +538,299 @@ export async function saveSettings(_p: ActionState, formData: FormData): Promise
     revalidatePath('/');
     return { ok: 'Settings saved.' };
   });
+}
+
+
+/* ================================================================== */
+/* Manual certificate generation                                       */
+/* ================================================================== */
+
+/** Collect the template's own columns plus the extras from a submitted form. */
+function valuesFromForm(formData: FormData, cfg: TemplateConfig): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const f of cfg.fields) values[f.key] = String(formData.get(`f_${f.key}`) ?? '').trim();
+  for (const c of EXTRA_COLUMNS) values[c.key] = String(formData.get(c.key) ?? '').trim();
+  return values;
+}
+
+/** Validate typed values the same way an imported row is validated. */
+function checkValues(values: Record<string, string>, cfg: TemplateConfig): string[] {
+  const errors: string[] = [];
+
+  for (const f of cfg.fields) {
+    const raw = values[f.key];
+    if (!raw) {
+      if (f.required && !f.defaultValue) errors.push(`${f.label} is required.`);
+      continue;
+    }
+    if (f.type === 'date') {
+      const d = toIsoDate(raw);
+      if (!d) errors.push(`${f.label} is not a valid date.`);
+      else values[f.key] = d;
+    } else if (f.type === 'number') {
+      const n = Number(String(raw).replace('%', ''));
+      if (!Number.isFinite(n)) errors.push(`${f.label} must be a number.`);
+      else values[f.key] = String(n);
+    }
+  }
+
+  if (values.start_date && values.end_date && values.start_date > values.end_date) {
+    errors.push('The end date falls before the start date.');
+  }
+  if (values.issued_on) {
+    const d = toIsoDate(values.issued_on);
+    if (!d) errors.push('Issue date is not valid.');
+    else values.issued_on = d;
+  }
+  if (values.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(values.email)) {
+    errors.push('Email address is not valid.');
+  }
+  return errors;
+}
+
+export type ManualState = ActionState & { values?: Record<string, string> };
+
+/** Create a certificate from values typed straight into the admin console. */
+export async function createManualCertificate(_p: ManualState, formData: FormData): Promise<ManualState> {
+  const admin = await requireAdmin();
+  const templateId = Number(formData.get('template_id')) || undefined;
+
+  let cfg: TemplateConfig;
+  try {
+    cfg = getTemplate(templateId).config;
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'No template available.' };
+  }
+
+  const values = valuesFromForm(formData, cfg);
+  const errors = checkValues(values, cfg);
+  if (errors.length) return { error: errors[0], values };
+
+  let cert;
+  try {
+    const h = await headers();
+    cert = issueManualCertificate({
+      values,
+      templateId,
+      actorId: admin.id,
+      baseUrl: baseUrlFrom(h),
+      reason: String(formData.get('reason') ?? '').trim() || 'manual entry',
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Could not generate the certificate.', values };
+  }
+
+  revalidateAdmin();
+  redirect(`/admin/certificates/${cert.id}?ok=${encodeURIComponent(`Certificate ${cert.cert_no} generated.`)}`);
+}
+
+/** Correct the snapshot of a manually-issued certificate, keeping its number. */
+export async function editManualCertificate(_p: ManualState, formData: FormData): Promise<ManualState> {
+  return guard(async () => {
+    const admin = await requireAdmin();
+    const id = Number(formData.get('certificate_id'));
+    if (!id) return { error: 'Missing certificate.' };
+
+    const cert = db.prepare('SELECT template_id FROM certificates WHERE id = ?').get(id) as
+      | { template_id: number }
+      | undefined;
+    if (!cert) return { error: 'Certificate not found.' };
+
+    const templateId = Number(formData.get('template_id')) || cert.template_id;
+    const cfg = getTemplate(templateId).config;
+
+    const values = valuesFromForm(formData, cfg);
+    const errors = checkValues(values, cfg);
+    if (errors.length) return { error: errors[0], values };
+
+    const h = await headers();
+    const updated = updateManualCertificate({
+      certificateId: id,
+      values,
+      templateId,
+      actorId: admin.id,
+      baseUrl: baseUrlFrom(h),
+    });
+
+    revalidateAdmin();
+    revalidatePath(`/verify/${updated.cert_no}`);
+    revalidatePath(`/admin/certificates/${id}`);
+    return { ok: `Certificate ${updated.cert_no} updated. Its number is unchanged.` };
+  });
+}
+
+/* ================================================================== */
+/* Spreadsheet import                                                  */
+/* ================================================================== */
+
+export interface ImportResultRow {
+  line: number;
+  name: string;
+  certNo?: string;
+  error?: string;
+}
+
+export type ImportState = ActionState & {
+  stage?: 'idle' | 'preview' | 'done';
+  templateId?: number;
+  fileName?: string;
+  headers?: string[];
+  unmatched?: string[];
+  missingRequired?: string[];
+  truncated?: boolean;
+  rows?: ParsedRow[];
+  summary?: { total: number; ok: number; warn: number; error: number };
+  results?: ImportResultRow[];
+  issuedCount?: number;
+};
+
+/**
+ * Two-stage bulk import.
+ *  - `intent=preview`: parse and validate the upload, return every row with its
+ *    status. Nothing is written.
+ *  - `intent=commit`: re-validate the reviewed rows server-side, then issue the
+ *    valid ones inside a single transaction.
+ */
+export async function importCertificates(_p: ImportState, formData: FormData): Promise<ImportState> {
+  const admin = await requireAdmin();
+  const intent = String(formData.get('intent') ?? 'preview');
+  const templateId = Number(formData.get('template_id')) || undefined;
+
+  let cfg: TemplateConfig;
+  let resolvedTemplateId: number;
+  try {
+    const tpl = getTemplate(templateId);
+    cfg = tpl.config;
+    resolvedTemplateId = tpl.id;
+  } catch (e) {
+    return { stage: 'idle', error: e instanceof Error ? e.message : 'No template available.' };
+  }
+
+  // Clears a finished or previewed batch without a page reload.
+  if (intent === 'reset') return { stage: 'idle', templateId: resolvedTemplateId };
+
+  /* ------------------------------ preview ----------------------------- */
+  if (intent === 'preview') {
+    const file = formData.get('file');
+    if (!(file instanceof File) || file.size === 0) {
+      return { stage: 'idle', templateId: resolvedTemplateId, error: 'Choose a .xlsx or .csv file to upload.' };
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      return {
+        stage: 'idle',
+        templateId: resolvedTemplateId,
+        error: `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB. The limit is ${MAX_FILE_BYTES / 1024 / 1024} MB.`,
+      };
+    }
+
+    let grid: string[][];
+    try {
+      grid = await fileToGrid(file);
+    } catch (e) {
+      return { stage: 'idle', templateId: resolvedTemplateId, error: e instanceof Error ? e.message : 'Could not read that file.' };
+    }
+
+    if (grid.length === 0) {
+      return { stage: 'idle', templateId: resolvedTemplateId, error: 'That file has no rows in it.' };
+    }
+    if (grid.length === 1) {
+      return {
+        stage: 'idle',
+        templateId: resolvedTemplateId,
+        error: 'That file has a header row but no data rows beneath it.',
+      };
+    }
+
+    const parsed = validateGrid(grid, cfg);
+    const summary = summarise(parsed.rows);
+
+    if (parsed.missingRequired.length) {
+      return {
+        stage: 'preview',
+        templateId: resolvedTemplateId,
+        fileName: file.name,
+        ...parsed,
+        summary,
+        error: `The file is missing required column(s): ${parsed.missingRequired.join(', ')}. Download the template below to get the exact headers.`,
+      };
+    }
+
+    return {
+      stage: 'preview',
+      templateId: resolvedTemplateId,
+      fileName: file.name,
+      ...parsed,
+      summary,
+      ok: `Read ${summary.total} row(s) from ${file.name}. ${summary.ok + summary.warn} ready to import${
+        summary.error ? `, ${summary.error} with errors that will be skipped` : ''
+      }.`,
+    };
+  }
+
+  /* ------------------------------ commit ------------------------------ */
+  let rows: ParsedRow[];
+  try {
+    rows = JSON.parse(String(formData.get('rows') ?? '[]')) as ParsedRow[];
+  } catch {
+    return { stage: 'idle', error: 'The reviewed rows could not be read. Please upload the file again.' };
+  }
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return { stage: 'idle', error: 'Nothing to import. Please upload the file again.' };
+  }
+
+  // Never trust the posted statuses — re-validate from the values themselves.
+  const grid: string[][] = [
+    Object.keys(rows[0].values),
+    ...rows.map((r) => Object.keys(rows[0].values).map((k) => r.values[k] ?? '')),
+  ];
+  const revalidated = validateGrid(grid, cfg);
+
+  const h = await headers();
+  const baseUrl = baseUrlFrom(h);
+  const results: ImportResultRow[] = [];
+  let issued = 0;
+
+  // One transaction: a mid-way failure must not leave a partial batch behind.
+  const run = db.transaction(() => {
+    revalidated.rows.forEach((row, i) => {
+      const line = rows[i]?.line ?? row.line;
+      const name = String(row.values.intern_name ?? '').trim() || '(no name)';
+
+      if (row.status === 'error') {
+        results.push({ line, name, error: row.messages.join('; ') });
+        return;
+      }
+      try {
+        const cert = issueManualCertificate({
+          values: row.values,
+          templateId: resolvedTemplateId,
+          actorId: admin.id,
+          baseUrl,
+          reason: `bulk import${formData.get('file_name') ? ` from ${formData.get('file_name')}` : ''}`,
+        });
+        results.push({ line, name, certNo: cert.cert_no });
+        issued++;
+      } catch (e) {
+        results.push({ line, name, error: e instanceof Error ? e.message : 'Failed to issue' });
+      }
+    });
+  });
+
+  try {
+    run();
+  } catch (e) {
+    return { stage: 'idle', error: `Import aborted, nothing was saved: ${e instanceof Error ? e.message : 'unknown error'}` };
+  }
+
+  audit(admin.id, 'certificate.bulk_import', 'certificate', '', `${issued} issued of ${revalidated.rows.length} rows`);
+  revalidateAdmin();
+
+  const failed = results.length - issued;
+  return {
+    stage: 'done',
+    templateId: resolvedTemplateId,
+    results,
+    issuedCount: issued,
+    ok: `Generated ${issued} certificate(s)${failed ? `; ${failed} row(s) skipped` : ''}.`,
+  };
 }

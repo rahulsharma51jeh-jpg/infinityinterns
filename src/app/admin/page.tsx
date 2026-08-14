@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ChevronRightIcon } from '@/components/ui/Icons';
 import type { Metadata } from 'next';
 import { db, getSetting } from '@/lib/db';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -94,7 +95,8 @@ export default function AdminOverviewPage() {
           <header className="flex items-center justify-between border-b border-navy-100 px-5 py-3.5">
             <h2 className="font-bold text-navy-900">Review queue</h2>
             <Link href="/admin/applications" className="text-sm font-medium text-brand-600 hover:underline">
-              All applications →
+              All applications
+            <ChevronRightIcon />
             </Link>
           </header>
 
@@ -179,7 +181,8 @@ export default function AdminOverviewPage() {
         <header className="flex items-center justify-between border-b border-navy-100 px-5 py-3.5">
           <h2 className="font-bold text-navy-900">Recently issued certificates</h2>
           <Link href="/admin/certificates" className="text-sm font-medium text-brand-600 hover:underline">
-            All certificates →
+            All certificates
+            <ChevronRightIcon />
           </Link>
         </header>
 

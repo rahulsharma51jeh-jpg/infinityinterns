@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { ChevronRightIcon } from '@/components/ui/Icons';
+import BackLink from '@/components/ui/BackLink';
 import { notFound } from 'next/navigation';
 import { headers } from 'next/headers';
 import type { Metadata } from 'next';
@@ -72,9 +74,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
 
   return (
     <div>
-      <Link href="/admin/applications" className="text-sm font-medium text-navy-500 hover:text-navy-800">
-        ← All applications
-      </Link>
+      <BackLink href="/admin/applications">All applications</BackLink>
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -291,7 +291,8 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
             {cert ? 'Issued certificate' : 'Preview — what approval will generate'}
           </h2>
           <Link href="/admin/templates" className="text-sm font-medium text-brand-600 hover:underline">
-            Edit the certificate design →
+            Edit the certificate design
+            <ChevronRightIcon />
           </Link>
         </div>
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { ChevronLeftIcon } from '@/components/ui/Icons';
 
 export default function PrintToolbar({
   certNo,
@@ -28,7 +29,8 @@ export default function PrintToolbar({
     <div className="no-print sticky top-0 z-30 border-b border-navy-100 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1180px] flex-wrap items-center gap-3 px-4 py-3">
         <Link href={backHref} className="btn-ghost btn-sm">
-          ← Back
+          <ChevronLeftIcon />
+          Back
         </Link>
 
         <div className="min-w-0">

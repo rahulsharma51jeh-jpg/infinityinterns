@@ -137,6 +137,50 @@ export function buildCertData(
   return data;
 }
 
+/**
+ * Same snapshot shape as `buildCertData`, but sourced from values keyed by
+ * field key rather than from an application row. Used by manual entry and
+ * spreadsheet import, where there is no application to read from.
+ */
+export function buildCertDataFromValues(
+  values: Record<string, unknown>,
+  cfg: TemplateConfig,
+  certNo: string,
+  issuedOn: string,
+  baseUrl: string,
+): CertData {
+  const data: CertData = {};
+
+  for (const f of cfg.fields) {
+    const raw = values[f.key] ?? f.defaultValue ?? '';
+
+    if (f.type === 'date') {
+      data[f.key] = formatDate(raw as string);
+    } else if (f.type === 'number') {
+      // Store numbers as numbers so a manually-entered or imported certificate
+      // is byte-for-byte comparable with one issued from an application — the
+      // public API exposes these values directly.
+      const n = Number(String(raw).replace('%', '').trim());
+      data[f.key] = raw === '' || !Number.isFinite(n) ? '' : n;
+    } else {
+      data[f.key] = (raw ?? '') as string | number;
+    }
+  }
+
+  const p = pronouns(String(values.gender ?? 'other'));
+  data.cert_no = certNo;
+  data.issue_date = formatDate(issuedOn);
+  data.year = new Date(issuedOn).getFullYear();
+  data.pronoun_subject = p.subject;
+  data.pronoun_object = p.object;
+  data.pronoun_possessive = p.possessive;
+  data.verify_url = `${baseUrl}/verify/${encodeURIComponent(certNo)}`;
+  data.gender = String(values.gender ?? 'other');
+  if (values.email) data.email = String(values.email);
+
+  return data;
+}
+
 function safeJson(s: string): Record<string, unknown> {
   try {
     const v = JSON.parse(s || '{}');
@@ -349,15 +393,22 @@ export function refreshCertificateData(opts: {
     | CertificateRow
     | undefined;
   if (!cert) throw new Error('Certificate not found');
-  if (!cert.application_id) throw new Error('This certificate is not linked to an application, so it cannot be rebuilt');
-
-  const app = db.prepare('SELECT * FROM applications WHERE id = ?').get(cert.application_id) as
-    | ApplicationRow
-    | undefined;
-  if (!app) throw new Error('The linked application no longer exists');
 
   const tpl = getTemplate(opts.templateId ?? cert.template_id);
-  const data = buildCertData(app, tpl.config, cert.cert_no, cert.issued_on, opts.baseUrl);
+  let data: CertData;
+
+  if (cert.application_id) {
+    const app = db.prepare('SELECT * FROM applications WHERE id = ?').get(cert.application_id) as
+      | ApplicationRow
+      | undefined;
+    if (!app) throw new Error('The linked application no longer exists');
+    data = buildCertData(app, tpl.config, cert.cert_no, cert.issued_on, opts.baseUrl);
+  } else {
+    // Manually issued: there is no application to re-read, so re-render the
+    // existing snapshot against the (possibly different) template.
+    const snapshot = JSON.parse(cert.data) as Record<string, unknown>;
+    data = buildCertDataFromValues(snapshot, tpl.config, cert.cert_no, cert.issued_on, opts.baseUrl);
+  }
 
   db.prepare("UPDATE certificates SET data = ?, template_id = ?, updated_at = datetime('now') WHERE id = ?").run(
     JSON.stringify(data),
@@ -387,4 +438,110 @@ export function restoreCertificate(certificateId: number, actorId: number | null
     certificateId,
   );
   audit(actorId, 'certificate.restore', 'certificate', certificateId);
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Manual + bulk issuing (no application record)                       */
+/* ------------------------------------------------------------------ */
+
+export interface ManualIssueInput {
+  /** values keyed by template field key, plus optional email/gender/issued_on/certificate_no */
+  values: Record<string, string>;
+  templateId?: number;
+  actorId: number | null;
+  baseUrl: string;
+  /** note recorded in the audit trail */
+  reason?: string;
+}
+
+/**
+ * Issue a certificate straight from typed or imported values, with no
+ * application behind it. `certificate_no` in the values lets an existing
+ * (paper) certificate be migrated under its original number.
+ */
+export function issueManualCertificate(input: ManualIssueInput): CertificateRow {
+  const tpl = getTemplate(input.templateId);
+  const v = input.values;
+
+  const issuedOn = v.issued_on || new Date().toISOString().slice(0, 10);
+
+  let certNo = (v.certificate_no || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (certNo) {
+    const clash = db.prepare('SELECT 1 FROM certificates WHERE UPPER(cert_no) = ?').get(certNo);
+    if (clash) throw new Error(`Certificate number ${certNo} is already in use.`);
+  } else {
+    certNo = generateCertNo(tpl.config.certNo.format);
+  }
+
+  // Link to an intern account when the email matches one, so the certificate
+  // shows up on their dashboard.
+  let userId: number | null = null;
+  if (v.email) {
+    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(v.email.toLowerCase()) as
+      | { id: number }
+      | undefined;
+    userId = user?.id ?? null;
+  }
+
+  const data = buildCertDataFromValues(v, tpl.config, certNo, issuedOn, input.baseUrl);
+
+  const info = db
+    .prepare(
+      `INSERT INTO certificates (cert_no, application_id, user_id, template_id, data, issued_on, issued_by)
+       VALUES (?, NULL, ?, ?, ?, ?, ?)`,
+    )
+    .run(certNo, userId, tpl.id, JSON.stringify(data), issuedOn, input.actorId);
+
+  audit(
+    input.actorId,
+    'certificate.issue_manual',
+    'certificate',
+    Number(info.lastInsertRowid),
+    [certNo, input.reason].filter(Boolean).join(' — '),
+  );
+
+  return db.prepare('SELECT * FROM certificates WHERE id = ?').get(info.lastInsertRowid) as CertificateRow;
+}
+
+/**
+ * Overwrite the stored snapshot of a manually-issued certificate. Only valid
+ * for certificates with no application behind them — ones tied to an
+ * application are corrected by editing that application and rebuilding.
+ */
+export function updateManualCertificate(opts: {
+  certificateId: number;
+  values: Record<string, string>;
+  templateId?: number;
+  actorId: number | null;
+  baseUrl: string;
+}): CertificateRow {
+  const cert = db.prepare('SELECT * FROM certificates WHERE id = ?').get(opts.certificateId) as
+    | CertificateRow
+    | undefined;
+  if (!cert) throw new Error('Certificate not found');
+  if (cert.application_id) {
+    throw new Error('This certificate is linked to an application. Edit the application and use Rebuild instead.');
+  }
+
+  const tpl = getTemplate(opts.templateId ?? cert.template_id);
+  const issuedOn = opts.values.issued_on || cert.issued_on;
+
+  // The number is never reassigned: printed copies and QR codes must keep working.
+  const data = buildCertDataFromValues(opts.values, tpl.config, cert.cert_no, issuedOn, opts.baseUrl);
+
+  let userId = cert.user_id;
+  if (opts.values.email) {
+    const user = db.prepare('SELECT id FROM users WHERE email = ?').get(opts.values.email.toLowerCase()) as
+      | { id: number }
+      | undefined;
+    userId = user?.id ?? null;
+  }
+
+  db.prepare(
+    "UPDATE certificates SET data = ?, template_id = ?, issued_on = ?, user_id = ?, updated_at = datetime('now') WHERE id = ?",
+  ).run(JSON.stringify(data), tpl.id, issuedOn, userId, cert.id);
+
+  audit(opts.actorId, 'certificate.edit_manual', 'certificate', cert.id, cert.cert_no);
+  return db.prepare('SELECT * FROM certificates WHERE id = ?').get(cert.id) as CertificateRow;
 }
